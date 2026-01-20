@@ -1,12 +1,50 @@
-import { getDaysInMonth, getMonthName, formatDateKey, getDayOfWeek } from '@/lib/dateUtils';
+import { getDaysInMonth, getMonthName, formatDateKey, getDayOfWeek, getWeekDays } from '@/lib/dateUtils';
+import type { Habit } from '@/hooks/useHabitData';
 
 interface YearCalendarProps {
   year: number;
-  checkedDays: Record<string, boolean>;
-  onToggleDay: (dateKey: string) => void;
+  weeklyHabits: Record<string, Record<string, boolean>>;
+  habitList: Habit[];
 }
 
-export const YearCalendar = ({ year, checkedDays, onToggleDay }: YearCalendarProps) => {
+// Map day numbers to day names
+const getDayName = (year: number, month: number, day: number): string => {
+  const dayIndex = getDayOfWeek(year, month, day);
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return days[dayIndex];
+};
+
+// Calculate completion percentage for a specific day
+const calculateDayCompletion = (
+  year: number,
+  month: number,
+  day: number,
+  weeklyHabits: Record<string, Record<string, boolean>>,
+  habitList: Habit[]
+): number => {
+  if (habitList.length === 0) return 0;
+
+  const dayName = getDayName(year, month, day);
+  let completed = 0;
+
+  habitList.forEach(habit => {
+    if (weeklyHabits[habit.id]?.[dayName]) {
+      completed++;
+    }
+  });
+
+  return completed / habitList.length;
+};
+
+// Check if date is today or in the past
+const isDatePastOrToday = (year: number, month: number, day: number): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkDate = new Date(year, month, day);
+  return checkDate <= today;
+};
+
+export const YearCalendar = ({ year, weeklyHabits, habitList }: YearCalendarProps) => {
   const months = Array.from({ length: 12 }, (_, i) => i);
 
   return (
@@ -46,14 +84,19 @@ export const YearCalendar = ({ year, checkedDays, onToggleDay }: YearCalendarPro
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const day = i + 1;
                   const dateKey = formatDateKey(year, month, day);
-                  const isChecked = checkedDays[dateKey] || false;
+                  const isPastOrToday = isDatePastOrToday(year, month, day);
+                  
+                  let statusClass = '';
+                  if (isPastOrToday && habitList.length > 0) {
+                    const completion = calculateDayCompletion(year, month, day, weeklyHabits, habitList);
+                    statusClass = completion >= 0.5 ? 'status-success' : 'status-danger';
+                  }
                   
                   return (
-                    <button
+                    <div
                       key={day}
-                      onClick={() => onToggleDay(dateKey)}
-                      className={`day-cell ${isChecked ? 'checked' : ''}`}
-                      aria-label={`${getMonthName(month)} ${day}, ${year}${isChecked ? ' - completed' : ''}`}
+                      className={`day-cell ${statusClass}`}
+                      aria-label={`${getMonthName(month)} ${day}, ${year}`}
                     />
                   );
                 })}
