@@ -38,6 +38,10 @@
 
     --radius: 0px;
 
+    /* Status colors - used sparingly */
+    --status-success: 142 76% 36%;
+    --status-danger: 0 84% 60%;
+
     /* Typography */
     --font-sans: 'Inter', system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
@@ -81,6 +85,10 @@
     --border: 0 0% 100%;
     --input: 0 0% 100%;
     --ring: 0 0% 100%;
+
+    /* Status colors - same in dark mode */
+    --status-success: 142 76% 36%;
+    --status-danger: 0 84% 60%;
 
     --sidebar-background: 0 0% 0%;
     --sidebar-foreground: 0 0% 100%;
@@ -142,16 +150,35 @@
 
   /* Calendar day cell */
   .day-cell {
-    @apply w-3 h-3 border border-foreground bg-background cursor-pointer;
+    @apply w-3 h-3 border border-foreground bg-background cursor-default;
     transition: none;
   }
 
-  .day-cell.checked {
-    @apply bg-foreground;
+  .day-cell.status-success {
+    background-color: hsl(var(--status-success));
+    @apply border-transparent;
+  }
+
+  .day-cell.status-danger {
+    background-color: hsl(var(--status-danger));
+    @apply border-transparent;
   }
 
   .day-cell.empty {
     @apply border-transparent bg-transparent cursor-default;
+  }
+
+  /* Todo item */
+  .todo-item {
+    @apply flex items-center gap-4 py-3 border-b border-foreground;
+  }
+
+  .todo-item.overdue {
+    color: hsl(var(--status-danger));
+  }
+
+  .todo-item.overdue .habit-checkbox {
+    border-color: hsl(var(--status-danger));
   }
 
   /* Bucket list item */

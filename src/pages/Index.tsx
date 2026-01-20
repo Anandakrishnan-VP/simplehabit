@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { YearCalendar } from '@/components/YearCalendar';
 import { WeeklyTimetable } from '@/components/WeeklyTimetable';
 import { BucketList } from '@/components/BucketList';
+import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
 import { useHabitData } from '@/hooks/useHabitData';
 
@@ -11,11 +12,16 @@ const Index = () => {
   
   const {
     data,
-    toggleYearDay,
     toggleWeeklyHabit,
+    addHabit,
+    editHabit,
+    deleteHabit,
     addBucketItem,
     toggleBucketItem,
-    removeBucketItem
+    removeBucketItem,
+    addTodo,
+    toggleTodo,
+    removeTodo
   } = useHabitData();
 
   return (
@@ -35,15 +41,28 @@ const Index = () => {
         
         <YearCalendar
           year={year}
-          checkedDays={data.yearCalendar}
-          onToggleDay={toggleYearDay}
+          weeklyHabits={data.weeklyHabits}
+          habitList={data.habitList}
         />
 
         <div className="section-divider" />
 
         <WeeklyTimetable
           habits={data.weeklyHabits}
+          habitList={data.habitList}
           onToggle={toggleWeeklyHabit}
+          onAddHabit={addHabit}
+          onEditHabit={editHabit}
+          onDeleteHabit={deleteHabit}
+        />
+
+        <div className="section-divider" />
+
+        <TodoList
+          todos={data.todos}
+          onAdd={addTodo}
+          onToggle={toggleTodo}
+          onRemove={removeTodo}
         />
 
         <div className="section-divider" />
