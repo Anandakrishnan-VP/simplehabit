@@ -14,9 +14,9 @@ interface WeeklyTimetableProps {
 
 export const WeeklyTimetable = ({ 
   habits, 
-  habitList,
+  habitList = [],
   onToggle, 
-  onAddHabit, 
+  onAddHabit,
   onEditHabit, 
   onDeleteHabit 
 }: WeeklyTimetableProps) => {

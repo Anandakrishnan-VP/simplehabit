@@ -1,4 +1,4 @@
-import { getDaysInMonth, getMonthName, formatDateKey, getDayOfWeek, getWeekDays } from '@/lib/dateUtils';
+import { getDaysInMonth, getMonthName, formatDateKey, getDayOfWeek } from '@/lib/dateUtils';
 import type { Habit } from '@/hooks/useHabitData';
 
 interface YearCalendarProps {
@@ -6,6 +6,8 @@ interface YearCalendarProps {
   weeklyHabits: Record<string, Record<string, boolean>>;
   habitList: Habit[];
 }
+
+const safeHabitList = (list: Habit[] | undefined): Habit[] => list ?? [];
 
 // Map day numbers to day names
 const getDayName = (year: number, month: number, day: number): string => {
@@ -22,18 +24,19 @@ const calculateDayCompletion = (
   weeklyHabits: Record<string, Record<string, boolean>>,
   habitList: Habit[]
 ): number => {
-  if (habitList.length === 0) return 0;
+  const habits = safeHabitList(habitList);
+  if (habits.length === 0) return 0;
 
   const dayName = getDayName(year, month, day);
   let completed = 0;
 
-  habitList.forEach(habit => {
+  habits.forEach(habit => {
     if (weeklyHabits[habit.id]?.[dayName]) {
       completed++;
     }
   });
 
-  return completed / habitList.length;
+  return completed / habits.length;
 };
 
 // Check if date is today or in the past
@@ -46,6 +49,7 @@ const isDatePastOrToday = (year: number, month: number, day: number): boolean =>
 
 export const YearCalendar = ({ year, weeklyHabits, habitList }: YearCalendarProps) => {
   const months = Array.from({ length: 12 }, (_, i) => i);
+  const habits = safeHabitList(habitList);
 
   return (
     <section className="mb-16">
@@ -87,8 +91,8 @@ export const YearCalendar = ({ year, weeklyHabits, habitList }: YearCalendarProp
                   const isPastOrToday = isDatePastOrToday(year, month, day);
                   
                   let statusClass = '';
-                  if (isPastOrToday && habitList.length > 0) {
-                    const completion = calculateDayCompletion(year, month, day, weeklyHabits, habitList);
+                  if (isPastOrToday && habits.length > 0) {
+                    const completion = calculateDayCompletion(year, month, day, weeklyHabits, habits);
                     statusClass = completion >= 0.5 ? 'status-success' : 'status-danger';
                   }
                   
