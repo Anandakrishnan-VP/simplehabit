@@ -3,13 +3,14 @@ import { useState } from 'react';
 interface BucketItem {
   id: string;
   text: string;
+  year: number;
   completed: boolean;
 }
 
 interface BucketListProps {
   year: number;
   items: BucketItem[];
-  onAdd: (text: string) => void;
+  onAdd: (text: string, year: number) => void;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
 }
@@ -17,10 +18,13 @@ interface BucketListProps {
 export const BucketList = ({ year, items, onAdd, onToggle, onRemove }: BucketListProps) => {
   const [newItem, setNewItem] = useState('');
 
+  // Filter items for the current year
+  const yearItems = items.filter(item => item.year === year);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newItem.trim()) {
-      onAdd(newItem.trim());
+      onAdd(newItem.trim(), year);
       setNewItem('');
     }
   };
@@ -49,12 +53,12 @@ export const BucketList = ({ year, items, onAdd, onToggle, onRemove }: BucketLis
 
         {/* List items */}
         <div className="space-y-0">
-          {items.length === 0 ? (
+          {yearItems.length === 0 ? (
             <p className="font-mono text-sm text-muted-foreground py-4">
               No goals yet. Add your first goal above.
             </p>
           ) : (
-            items.map(item => (
+            yearItems.map(item => (
               <div
                 key={item.id}
                 className={`bucket-item group ${item.completed ? 'completed' : ''}`}
@@ -80,10 +84,10 @@ export const BucketList = ({ year, items, onAdd, onToggle, onRemove }: BucketLis
         </div>
 
         {/* Stats */}
-        {items.length > 0 && (
+        {yearItems.length > 0 && (
           <div className="mt-8 pt-4 border-t border-foreground">
             <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-              {items.filter(i => i.completed).length} / {items.length} completed
+              {yearItems.filter(i => i.completed).length} / {yearItems.length} completed
             </p>
           </div>
         )}

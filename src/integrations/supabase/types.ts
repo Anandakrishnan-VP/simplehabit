@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      bucket_list: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          text: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          text: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          text?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      habit_completions: {
+        Row: {
+          completed: boolean
+          created_at: string
+          day_of_week: string
+          habit_id: string
+          id: string
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          day_of_week: string
+          habit_id: string
+          id?: string
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          day_of_week?: string
+          habit_id?: string
+          id?: string
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -38,6 +127,33 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      todos: {
+        Row: {
+          completed: boolean
+          created_at: string
+          deadline: string
+          id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          deadline: string
+          id?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          deadline?: string
+          id?: string
+          title?: string
+          user_id?: string
         }
         Relationships: []
       }

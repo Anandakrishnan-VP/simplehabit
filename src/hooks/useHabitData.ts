@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface Habit {
   id: string;
@@ -8,216 +10,324 @@ export interface Habit {
 export interface Todo {
   id: string;
   title: string;
-  deadline: string; // YYYY-MM-DD format
+  deadline: string;
+  completed: boolean;
+}
+
+export interface BucketItem {
+  id: string;
+  text: string;
+  year: number;
   completed: boolean;
 }
 
 export interface HabitData {
-  yearCalendar: Record<string, boolean>;
   weeklyHabits: Record<string, Record<string, boolean>>;
   habitList: Habit[];
-  bucketList: Array<{ id: string; text: string; completed: boolean }>;
+  bucketList: BucketItem[];
   todos: Todo[];
 }
 
-const STORAGE_KEY = 'habit-tracker-data';
-
-const DEFAULT_HABITS: Habit[] = [
-  { id: 'exercise', name: 'Exercise' },
-  { id: 'reading', name: 'Reading' },
-  { id: 'meditation', name: 'Meditation' },
-  { id: 'journaling', name: 'Journaling' },
-  { id: 'deep-work', name: 'Deep Work' },
-];
-
-const getInitialData = (): HabitData => {
-  if (typeof window === 'undefined') {
-    return { yearCalendar: {}, weeklyHabits: {}, habitList: DEFAULT_HABITS, bucketList: [], todos: [] };
-  }
-  
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      // Ensure habitList exists (migration from old data structure)
-      if (!parsed.habitList) {
-        parsed.habitList = DEFAULT_HABITS;
-      }
-      if (!parsed.todos) {
-        parsed.todos = [];
-      }
-      return parsed;
-    } catch {
-      return { yearCalendar: {}, weeklyHabits: {}, habitList: DEFAULT_HABITS, bucketList: [], todos: [] };
-    }
-  }
-  
-  return { yearCalendar: {}, weeklyHabits: {}, habitList: DEFAULT_HABITS, bucketList: [], todos: [] };
+// Get the Monday of the current week
+const getWeekStart = (): string => {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(now.setDate(diff));
+  return monday.toISOString().split('T')[0];
 };
 
 export const useHabitData = () => {
-  const [data, setData] = useState<HabitData>(getInitialData);
+  const { user } = useAuth();
+  const [data, setData] = useState<HabitData>({
+    weeklyHabits: {},
+    habitList: [],
+    bucketList: [],
+    todos: []
+  });
+  const [loading, setLoading] = useState(true);
 
-  const saveData = useCallback((newData: HabitData) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-    setData(newData);
-  }, []);
+  // Fetch all data on mount
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-  const toggleYearDay = useCallback((dateKey: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        yearCalendar: {
-          ...prev.yearCalendar,
-          [dateKey]: !prev.yearCalendar[dateKey]
+    const fetchData = async () => {
+      setLoading(true);
+      const weekStart = getWeekStart();
+
+      // Fetch habits
+      const { data: habits } = await supabase
+        .from('habits')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      // Fetch habit completions for this week
+      const { data: completions } = await supabase
+        .from('habit_completions')
+        .select('*')
+        .eq('week_start', weekStart);
+
+      // Fetch todos
+      const { data: todos } = await supabase
+        .from('todos')
+        .select('*')
+        .order('deadline', { ascending: true });
+
+      // Fetch bucket list
+      const { data: bucketItems } = await supabase
+        .from('bucket_list')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      // Build weeklyHabits map
+      const weeklyHabits: Record<string, Record<string, boolean>> = {};
+      (completions || []).forEach(c => {
+        if (!weeklyHabits[c.habit_id]) {
+          weeklyHabits[c.habit_id] = {};
         }
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+        weeklyHabits[c.habit_id][c.day_of_week] = c.completed;
+      });
 
-  const toggleWeeklyHabit = useCallback((habitId: string, day: string) => {
-    setData(prev => {
-      const habitData = prev.weeklyHabits[habitId] || {};
-      const newData = {
-        ...prev,
-        weeklyHabits: {
-          ...prev.weeklyHabits,
-          [habitId]: {
-            ...habitData,
-            [day]: !habitData[day]
-          }
+      setData({
+        habitList: (habits || []).map(h => ({ id: h.id, name: h.name })),
+        weeklyHabits,
+        todos: (todos || []).map(t => ({
+          id: t.id,
+          title: t.title,
+          deadline: t.deadline,
+          completed: t.completed
+        })),
+        bucketList: (bucketItems || []).map(b => ({
+          id: b.id,
+          text: b.text,
+          year: b.year,
+          completed: b.completed
+        }))
+      });
+
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [user]);
+
+  // Toggle weekly habit completion
+  const toggleWeeklyHabit = useCallback(async (habitId: string, day: string) => {
+    if (!user) return;
+    
+    const weekStart = getWeekStart();
+    const currentValue = data.weeklyHabits[habitId]?.[day] || false;
+
+    // Optimistic update
+    setData(prev => ({
+      ...prev,
+      weeklyHabits: {
+        ...prev.weeklyHabits,
+        [habitId]: {
+          ...prev.weeklyHabits[habitId],
+          [day]: !currentValue
         }
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+      }
+    }));
 
-  // Habit management
-  const addHabit = useCallback((name: string) => {
-    setData(prev => {
-      const newData = {
+    if (currentValue) {
+      // Delete the completion
+      await supabase
+        .from('habit_completions')
+        .delete()
+        .eq('habit_id', habitId)
+        .eq('day_of_week', day)
+        .eq('week_start', weekStart);
+    } else {
+      // Insert/upsert completion
+      await supabase
+        .from('habit_completions')
+        .upsert({
+          user_id: user.id,
+          habit_id: habitId,
+          day_of_week: day,
+          week_start: weekStart,
+          completed: true
+        }, { onConflict: 'habit_id,day_of_week,week_start' });
+    }
+  }, [user, data.weeklyHabits]);
+
+  // Add new habit
+  const addHabit = useCallback(async (name: string) => {
+    if (!user) return;
+
+    const { data: newHabit, error } = await supabase
+      .from('habits')
+      .insert({ user_id: user.id, name, sort_order: data.habitList.length })
+      .select()
+      .single();
+
+    if (!error && newHabit) {
+      setData(prev => ({
         ...prev,
-        habitList: [
-          ...prev.habitList,
-          { id: Date.now().toString(), name }
-        ]
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+        habitList: [...prev.habitList, { id: newHabit.id, name: newHabit.name }]
+      }));
+    }
+  }, [user, data.habitList.length]);
 
-  const editHabit = useCallback((id: string, newName: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        habitList: prev.habitList.map(h => 
-          h.id === id ? { ...h, name: newName } : h
-        )
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+  // Edit habit
+  const editHabit = useCallback(async (id: string, newName: string) => {
+    if (!user) return;
 
-  const deleteHabit = useCallback((id: string) => {
+    await supabase
+      .from('habits')
+      .update({ name: newName })
+      .eq('id', id);
+
+    setData(prev => ({
+      ...prev,
+      habitList: prev.habitList.map(h => 
+        h.id === id ? { ...h, name: newName } : h
+      )
+    }));
+  }, [user]);
+
+  // Delete habit
+  const deleteHabit = useCallback(async (id: string) => {
+    if (!user) return;
+
+    await supabase
+      .from('habits')
+      .delete()
+      .eq('id', id);
+
     setData(prev => {
-      // Also remove the habit's tracking data
       const { [id]: removed, ...remainingWeeklyHabits } = prev.weeklyHabits;
-      const newData = {
+      return {
         ...prev,
         habitList: prev.habitList.filter(h => h.id !== id),
         weeklyHabits: remainingWeeklyHabits
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
     });
-  }, []);
+  }, [user]);
 
-  // Bucket list
-  const addBucketItem = useCallback((text: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        bucketList: [
-          ...prev.bucketList,
-          { id: Date.now().toString(), text, completed: false }
-        ]
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+  // Add bucket item
+  const addBucketItem = useCallback(async (text: string, year: number) => {
+    if (!user) return;
 
-  const toggleBucketItem = useCallback((id: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        bucketList: prev.bucketList.map(item =>
-          item.id === id ? { ...item, completed: !item.completed } : item
-        )
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+    const { data: newItem, error } = await supabase
+      .from('bucket_list')
+      .insert({ user_id: user.id, text, year, completed: false })
+      .select()
+      .single();
 
-  const removeBucketItem = useCallback((id: string) => {
-    setData(prev => {
-      const newData = {
+    if (!error && newItem) {
+      setData(prev => ({
         ...prev,
-        bucketList: prev.bucketList.filter(item => item.id !== id)
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+        bucketList: [...prev.bucketList, {
+          id: newItem.id,
+          text: newItem.text,
+          year: newItem.year,
+          completed: newItem.completed
+        }]
+      }));
+    }
+  }, [user]);
 
-  // Todo management
-  const addTodo = useCallback((title: string, deadline: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        todos: [
-          ...prev.todos,
-          { id: Date.now().toString(), title, deadline, completed: false }
-        ]
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+  // Toggle bucket item
+  const toggleBucketItem = useCallback(async (id: string) => {
+    if (!user) return;
 
-  const toggleTodo = useCallback((id: string) => {
-    setData(prev => {
-      const newData = {
-        ...prev,
-        todos: prev.todos.map(todo =>
-          todo.id === id ? { ...todo, completed: !todo.completed } : todo
-        )
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+    const item = data.bucketList.find(b => b.id === id);
+    if (!item) return;
 
-  const removeTodo = useCallback((id: string) => {
-    setData(prev => {
-      const newData = {
+    await supabase
+      .from('bucket_list')
+      .update({ completed: !item.completed })
+      .eq('id', id);
+
+    setData(prev => ({
+      ...prev,
+      bucketList: prev.bucketList.map(b =>
+        b.id === id ? { ...b, completed: !b.completed } : b
+      )
+    }));
+  }, [user, data.bucketList]);
+
+  // Remove bucket item
+  const removeBucketItem = useCallback(async (id: string) => {
+    if (!user) return;
+
+    await supabase
+      .from('bucket_list')
+      .delete()
+      .eq('id', id);
+
+    setData(prev => ({
+      ...prev,
+      bucketList: prev.bucketList.filter(b => b.id !== id)
+    }));
+  }, [user]);
+
+  // Add todo
+  const addTodo = useCallback(async (title: string, deadline: string) => {
+    if (!user) return;
+
+    const { data: newTodo, error } = await supabase
+      .from('todos')
+      .insert({ user_id: user.id, title, deadline, completed: false })
+      .select()
+      .single();
+
+    if (!error && newTodo) {
+      setData(prev => ({
         ...prev,
-        todos: prev.todos.filter(todo => todo.id !== id)
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      return newData;
-    });
-  }, []);
+        todos: [...prev.todos, {
+          id: newTodo.id,
+          title: newTodo.title,
+          deadline: newTodo.deadline,
+          completed: newTodo.completed
+        }]
+      }));
+    }
+  }, [user]);
+
+  // Toggle todo
+  const toggleTodo = useCallback(async (id: string) => {
+    if (!user) return;
+
+    const todo = data.todos.find(t => t.id === id);
+    if (!todo) return;
+
+    await supabase
+      .from('todos')
+      .update({ completed: !todo.completed })
+      .eq('id', id);
+
+    setData(prev => ({
+      ...prev,
+      todos: prev.todos.map(t =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      )
+    }));
+  }, [user, data.todos]);
+
+  // Remove todo
+  const removeTodo = useCallback(async (id: string) => {
+    if (!user) return;
+
+    await supabase
+      .from('todos')
+      .delete()
+      .eq('id', id);
+
+    setData(prev => ({
+      ...prev,
+      todos: prev.todos.filter(t => t.id !== id)
+    }));
+  }, [user]);
 
   return {
     data,
-    toggleYearDay,
+    loading,
     toggleWeeklyHabit,
     addHabit,
     editHabit,

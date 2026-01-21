@@ -16,6 +16,7 @@ const Index = () => {
   
   const {
     data,
+    loading: dataLoading,
     toggleWeeklyHabit,
     addHabit,
     editHabit,
@@ -34,7 +35,7 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <p className="font-mono text-sm uppercase tracking-wider">Loading...</p>
