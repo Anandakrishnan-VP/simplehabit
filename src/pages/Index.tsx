@@ -5,6 +5,7 @@ import { DailyHabits } from '@/components/DailyHabits';
 import { BucketList } from '@/components/BucketList';
 import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
+import { RealTimeClock } from '@/components/RealTimeClock';
 import { useHabitData } from '@/hooks/useHabitData';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -17,7 +18,7 @@ const Index = () => {
   const {
     data,
     loading: dataLoading,
-    toggleWeeklyHabit,
+    toggleHabitCompletion,
     addHabit,
     editHabit,
     deleteHabit,
@@ -66,20 +67,22 @@ const Index = () => {
 
       {/* Main content */}
       <main className="container max-w-6xl mx-auto px-6 py-12">
+        <RealTimeClock />
+        
         <YearSelector year={year} onYearChange={setYear} />
         
         <YearCalendar
           year={year}
-          weeklyHabits={data.weeklyHabits}
+          habitCompletions={data.habitCompletions}
           habitList={data.habitList}
         />
 
         <div className="section-divider" />
 
         <DailyHabits
-          habits={data.weeklyHabits}
+          habitCompletions={data.habitCompletions}
           habitList={data.habitList}
-          onToggle={toggleWeeklyHabit}
+          onToggle={toggleHabitCompletion}
           onAddHabit={addHabit}
           onEditHabit={editHabit}
           onDeleteHabit={deleteHabit}
