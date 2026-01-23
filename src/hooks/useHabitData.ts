@@ -5,6 +5,7 @@ import { useAuth } from './useAuth';
 export interface Habit {
   id: string;
   name: string;
+  dayOfWeek: string | null;
 }
 
 export interface Todo {
@@ -92,7 +93,7 @@ export const useHabitData = () => {
       });
 
       setData({
-        habitList: (habits || []).map(h => ({ id: h.id, name: h.name })),
+        habitList: (habits || []).map(h => ({ id: h.id, name: h.name, dayOfWeek: h.day_of_week })),
         weeklyHabits,
         todos: (todos || []).map(t => ({
           id: t.id,
@@ -156,19 +157,24 @@ export const useHabitData = () => {
   }, [user, data.weeklyHabits]);
 
   // Add new habit
-  const addHabit = useCallback(async (name: string) => {
+  const addHabit = useCallback(async (name: string, dayOfWeek?: string) => {
     if (!user) return;
 
     const { data: newHabit, error } = await supabase
       .from('habits')
-      .insert({ user_id: user.id, name, sort_order: data.habitList.length })
+      .insert({ 
+        user_id: user.id, 
+        name, 
+        sort_order: data.habitList.length,
+        day_of_week: dayOfWeek || null
+      })
       .select()
       .single();
 
     if (!error && newHabit) {
       setData(prev => ({
         ...prev,
-        habitList: [...prev.habitList, { id: newHabit.id, name: newHabit.name }]
+        habitList: [...prev.habitList, { id: newHabit.id, name: newHabit.name, dayOfWeek: newHabit.day_of_week }]
       }));
     }
   }, [user, data.habitList.length]);
@@ -188,7 +194,7 @@ export const useHabitData = () => {
         h.id === id ? { ...h, name: newName } : h
       )
     }));
-  }, [user]);
+  }, []);
 
   // Delete habit
   const deleteHabit = useCallback(async (id: string) => {
