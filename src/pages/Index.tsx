@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { YearCalendar } from '@/components/YearCalendar';
-import { WeeklyTimetable } from '@/components/WeeklyTimetable';
+import { DailyHabits } from '@/components/DailyHabits';
 import { BucketList } from '@/components/BucketList';
 import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
@@ -76,7 +76,7 @@ const Index = () => {
 
         <div className="section-divider" />
 
-        <WeeklyTimetable
+        <DailyHabits
           habits={data.weeklyHabits}
           habitList={data.habitList}
           onToggle={toggleWeeklyHabit}

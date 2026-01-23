@@ -82,6 +82,7 @@ export type Database = {
       habits: {
         Row: {
           created_at: string
+          day_of_week: string | null
           id: string
           name: string
           sort_order: number | null
@@ -89,6 +90,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          day_of_week?: string | null
           id?: string
           name: string
           sort_order?: number | null
@@ -96,6 +98,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          day_of_week?: string | null
           id?: string
           name?: string
           sort_order?: number | null
