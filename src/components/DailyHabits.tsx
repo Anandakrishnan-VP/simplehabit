@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Plus, X, Check, Pencil } from 'lucide-react';
 import type { Habit } from '@/hooks/useHabitData';
+import { getTodayDate, getDayOfWeek } from '@/hooks/useHabitData';
 
 interface DailyHabitsProps {
-  habits: Record<string, Record<string, boolean>>;
+  habitCompletions: Record<string, Record<string, boolean>>;
   habitList: Habit[];
-  onToggle: (habitId: string, day: string) => void;
+  onToggle: (habitId: string, date: string) => void;
   onAddHabit: (name: string, dayOfWeek: string) => void;
   onEditHabit: (id: string, newName: string) => void;
   onDeleteHabit: (id: string) => void;
@@ -13,15 +14,32 @@ interface DailyHabitsProps {
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Get the date string for a specific day of the current week
+const getDateForDay = (dayName: string): string => {
+  const today = new Date();
+  const currentDayIndex = today.getDay(); // 0 = Sun, 1 = Mon, etc.
+  const targetDayIndex = DAYS.indexOf(dayName) + 1; // 1 = Mon, 2 = Tue, etc. (Sun = 7)
+  const adjustedTargetIndex = dayName === 'Sun' ? 0 : targetDayIndex;
+  
+  const diff = adjustedTargetIndex - currentDayIndex;
+  const targetDate = new Date(today);
+  targetDate.setDate(today.getDate() + diff);
+  
+  return targetDate.toISOString().split('T')[0];
+};
+
 export const DailyHabits = ({
-  habits,
+  habitCompletions,
   habitList,
   onToggle,
   onAddHabit,
   onEditHabit,
   onDeleteHabit
 }: DailyHabitsProps) => {
-  const [expandedDay, setExpandedDay] = useState<string | null>(DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]);
+  const today = getTodayDate();
+  const todayDayName = getDayOfWeek(today);
+  
+  const [expandedDay, setExpandedDay] = useState<string | null>(todayDayName);
   const [newHabitName, setNewHabitName] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -64,18 +82,30 @@ export const DailyHabits = ({
         {DAYS.map(day => {
           const dayHabits = getHabitsForDay(day);
           const isExpanded = expandedDay === day;
-          const completedCount = dayHabits.filter(h => habits[h.id]?.[day]).length;
+          const dateForDay = getDateForDay(day);
+          const isToday = dateForDay === today;
+          const completedCount = dayHabits.filter(h => habitCompletions[h.id]?.[dateForDay]).length;
           
           return (
-            <div key={day} className="border border-foreground">
+            <div key={day} className={`border border-foreground ${isToday ? 'ring-2 ring-foreground' : ''}`}>
               {/* Day Header */}
               <button
                 onClick={() => setExpandedDay(isExpanded ? null : day)}
                 className="w-full flex items-center justify-between px-4 py-3 hover:bg-foreground/5 transition-colors"
               >
-                <span className="font-mono text-sm font-semibold uppercase tracking-wider">
-                  {day}
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm font-semibold uppercase tracking-wider">
+                    {day}
+                  </span>
+                  {isToday && (
+                    <span className="font-mono text-xs px-2 py-0.5 bg-foreground text-background">
+                      TODAY
+                    </span>
+                  )}
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {dateForDay}
+                  </span>
+                </div>
                 <span className="font-mono text-xs text-muted-foreground">
                   {dayHabits.length > 0 ? `${completedCount}/${dayHabits.length}` : 'No habits'}
                 </span>
@@ -88,13 +118,13 @@ export const DailyHabits = ({
                   {dayHabits.length > 0 ? (
                     <ul className="space-y-2 mb-4">
                       {dayHabits.map(habit => {
-                        const isChecked = habits[habit.id]?.[day] || false;
+                        const isChecked = habitCompletions[habit.id]?.[dateForDay] || false;
                         const isEditing = editingId === habit.id;
 
                         return (
                           <li key={habit.id} className="flex items-center gap-3">
                             <button
-                              onClick={() => onToggle(habit.id, day)}
+                              onClick={() => onToggle(habit.id, dateForDay)}
                               className={`habit-checkbox flex-shrink-0 ${isChecked ? 'checked' : ''}`}
                               aria-label={`${habit.name}${isChecked ? ' - completed' : ''}`}
                             />

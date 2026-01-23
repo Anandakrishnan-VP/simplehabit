@@ -3,40 +3,50 @@ import type { Habit } from '@/hooks/useHabitData';
 
 interface YearCalendarProps {
   year: number;
-  weeklyHabits: Record<string, Record<string, boolean>>;
+  habitCompletions: Record<string, Record<string, boolean>>;
   habitList: Habit[];
 }
 
 const safeHabitList = (list: Habit[] | undefined): Habit[] => list ?? [];
 
 // Map day numbers to day names
-const getDayName = (year: number, month: number, day: number): string => {
-  const dayIndex = getDayOfWeek(year, month, day);
+const getDayName = (dayIndex: number): string => {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return days[dayIndex];
 };
 
-// Calculate completion percentage for a specific day
+// Get date string in YYYY-MM-DD format
+const getDateString = (year: number, month: number, day: number): string => {
+  const m = (month + 1).toString().padStart(2, '0');
+  const d = day.toString().padStart(2, '0');
+  return `${year}-${m}-${d}`;
+};
+
+// Calculate completion percentage for a specific date
 const calculateDayCompletion = (
   year: number,
   month: number,
   day: number,
-  weeklyHabits: Record<string, Record<string, boolean>>,
+  habitCompletions: Record<string, Record<string, boolean>>,
   habitList: Habit[]
 ): number => {
   const habits = safeHabitList(habitList);
-  if (habits.length === 0) return 0;
+  const dateStr = getDateString(year, month, day);
+  const dayIndex = getDayOfWeek(year, month, day);
+  const dayName = getDayName(dayIndex);
+  
+  // Get habits that are scheduled for this day of week
+  const habitsForDay = habits.filter(h => h.dayOfWeek === dayName);
+  if (habitsForDay.length === 0) return -1; // No habits scheduled
 
-  const dayName = getDayName(year, month, day);
   let completed = 0;
-
-  habits.forEach(habit => {
-    if (weeklyHabits[habit.id]?.[dayName]) {
+  habitsForDay.forEach(habit => {
+    if (habitCompletions[habit.id]?.[dateStr]) {
       completed++;
     }
   });
 
-  return completed / habits.length;
+  return completed / habitsForDay.length;
 };
 
 // Check if date is today or in the past
@@ -47,7 +57,7 @@ const isDatePastOrToday = (year: number, month: number, day: number): boolean =>
   return checkDate <= today;
 };
 
-export const YearCalendar = ({ year, weeklyHabits, habitList }: YearCalendarProps) => {
+export const YearCalendar = ({ year, habitCompletions, habitList }: YearCalendarProps) => {
   const months = Array.from({ length: 12 }, (_, i) => i);
   const habits = safeHabitList(habitList);
 
@@ -87,13 +97,14 @@ export const YearCalendar = ({ year, weeklyHabits, habitList }: YearCalendarProp
                 {/* Day cells */}
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const day = i + 1;
-                  const dateKey = formatDateKey(year, month, day);
                   const isPastOrToday = isDatePastOrToday(year, month, day);
                   
                   let statusClass = '';
-                  if (isPastOrToday && habits.length > 0) {
-                    const completion = calculateDayCompletion(year, month, day, weeklyHabits, habits);
-                    statusClass = completion >= 0.5 ? 'status-success' : 'status-danger';
+                  if (isPastOrToday) {
+                    const completion = calculateDayCompletion(year, month, day, habitCompletions, habits);
+                    if (completion >= 0) { // Only color if there are habits scheduled
+                      statusClass = completion >= 0.5 ? 'status-success' : 'status-danger';
+                    }
                   }
                   
                   return (

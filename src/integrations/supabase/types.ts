@@ -44,6 +44,7 @@ export type Database = {
       habit_completions: {
         Row: {
           completed: boolean
+          completion_date: string | null
           created_at: string
           day_of_week: string
           habit_id: string
@@ -53,6 +54,7 @@ export type Database = {
         }
         Insert: {
           completed?: boolean
+          completion_date?: string | null
           created_at?: string
           day_of_week: string
           habit_id: string
@@ -62,6 +64,7 @@ export type Database = {
         }
         Update: {
           completed?: boolean
+          completion_date?: string | null
           created_at?: string
           day_of_week?: string
           habit_id?: string

@@ -23,25 +23,29 @@ export interface BucketItem {
 }
 
 export interface HabitData {
-  weeklyHabits: Record<string, Record<string, boolean>>;
+  // Now keyed by habitId -> date string (YYYY-MM-DD) -> boolean
+  habitCompletions: Record<string, Record<string, boolean>>;
   habitList: Habit[];
   bucketList: BucketItem[];
   todos: Todo[];
 }
 
-// Get the Monday of the current week
-const getWeekStart = (): string => {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  return monday.toISOString().split('T')[0];
+// Get today's date as YYYY-MM-DD
+export const getTodayDate = (): string => {
+  return new Date().toISOString().split('T')[0];
+};
+
+// Get day of week from date
+export const getDayOfWeek = (dateStr: string): string => {
+  const date = new Date(dateStr + 'T00:00:00');
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return days[date.getDay()];
 };
 
 export const useHabitData = () => {
   const { user } = useAuth();
   const [data, setData] = useState<HabitData>({
-    weeklyHabits: {},
+    habitCompletions: {},
     habitList: [],
     bucketList: [],
     todos: []
@@ -57,7 +61,6 @@ export const useHabitData = () => {
 
     const fetchData = async () => {
       setLoading(true);
-      const weekStart = getWeekStart();
 
       // Fetch habits
       const { data: habits } = await supabase
@@ -65,11 +68,10 @@ export const useHabitData = () => {
         .select('*')
         .order('sort_order', { ascending: true });
 
-      // Fetch habit completions for this week
+      // Fetch all habit completions (we'll filter by date in the component)
       const { data: completions } = await supabase
         .from('habit_completions')
-        .select('*')
-        .eq('week_start', weekStart);
+        .select('*');
 
       // Fetch todos
       const { data: todos } = await supabase
@@ -83,18 +85,20 @@ export const useHabitData = () => {
         .select('*')
         .order('created_at', { ascending: true });
 
-      // Build weeklyHabits map
-      const weeklyHabits: Record<string, Record<string, boolean>> = {};
+      // Build habitCompletions map: habitId -> date -> boolean
+      const habitCompletions: Record<string, Record<string, boolean>> = {};
       (completions || []).forEach(c => {
-        if (!weeklyHabits[c.habit_id]) {
-          weeklyHabits[c.habit_id] = {};
+        if (c.completion_date) {
+          if (!habitCompletions[c.habit_id]) {
+            habitCompletions[c.habit_id] = {};
+          }
+          habitCompletions[c.habit_id][c.completion_date] = c.completed;
         }
-        weeklyHabits[c.habit_id][c.day_of_week] = c.completed;
       });
 
       setData({
         habitList: (habits || []).map(h => ({ id: h.id, name: h.name, dayOfWeek: h.day_of_week })),
-        weeklyHabits,
+        habitCompletions,
         todos: (todos || []).map(t => ({
           id: t.id,
           title: t.title,
@@ -115,21 +119,21 @@ export const useHabitData = () => {
     fetchData();
   }, [user]);
 
-  // Toggle weekly habit completion
-  const toggleWeeklyHabit = useCallback(async (habitId: string, day: string) => {
+  // Toggle habit completion for a specific date
+  const toggleHabitCompletion = useCallback(async (habitId: string, date: string) => {
     if (!user) return;
     
-    const weekStart = getWeekStart();
-    const currentValue = data.weeklyHabits[habitId]?.[day] || false;
+    const currentValue = data.habitCompletions[habitId]?.[date] || false;
+    const dayOfWeek = getDayOfWeek(date);
 
     // Optimistic update
     setData(prev => ({
       ...prev,
-      weeklyHabits: {
-        ...prev.weeklyHabits,
+      habitCompletions: {
+        ...prev.habitCompletions,
         [habitId]: {
-          ...prev.weeklyHabits[habitId],
-          [day]: !currentValue
+          ...prev.habitCompletions[habitId],
+          [date]: !currentValue
         }
       }
     }));
@@ -140,21 +144,21 @@ export const useHabitData = () => {
         .from('habit_completions')
         .delete()
         .eq('habit_id', habitId)
-        .eq('day_of_week', day)
-        .eq('week_start', weekStart);
+        .eq('completion_date', date);
     } else {
-      // Insert/upsert completion
+      // Insert completion
       await supabase
         .from('habit_completions')
-        .upsert({
+        .insert({
           user_id: user.id,
           habit_id: habitId,
-          day_of_week: day,
-          week_start: weekStart,
+          day_of_week: dayOfWeek,
+          week_start: date, // Keep for backwards compat
+          completion_date: date,
           completed: true
-        }, { onConflict: 'habit_id,day_of_week,week_start' });
+        });
     }
-  }, [user, data.weeklyHabits]);
+  }, [user, data.habitCompletions]);
 
   // Add new habit
   const addHabit = useCallback(async (name: string, dayOfWeek?: string) => {
@@ -194,7 +198,7 @@ export const useHabitData = () => {
         h.id === id ? { ...h, name: newName } : h
       )
     }));
-  }, []);
+  }, [user]);
 
   // Delete habit
   const deleteHabit = useCallback(async (id: string) => {
@@ -206,11 +210,11 @@ export const useHabitData = () => {
       .eq('id', id);
 
     setData(prev => {
-      const { [id]: removed, ...remainingWeeklyHabits } = prev.weeklyHabits;
+      const { [id]: removed, ...remainingCompletions } = prev.habitCompletions;
       return {
         ...prev,
         habitList: prev.habitList.filter(h => h.id !== id),
-        weeklyHabits: remainingWeeklyHabits
+        habitCompletions: remainingCompletions
       };
     });
   }, [user]);
@@ -334,7 +338,7 @@ export const useHabitData = () => {
   return {
     data,
     loading,
-    toggleWeeklyHabit,
+    toggleHabitCompletion,
     addHabit,
     editHabit,
     deleteHabit,
