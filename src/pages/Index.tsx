@@ -6,8 +6,10 @@ import { BucketList } from '@/components/BucketList';
 import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
 import { RealTimeClock } from '@/components/RealTimeClock';
+import { HabitRadarChart } from '@/components/HabitRadarChart';
 import { useHabitData } from '@/hooks/useHabitData';
 import { useAuth } from '@/hooks/useAuth';
+
 
 const Index = () => {
   const currentYear = new Date().getFullYear();
@@ -66,16 +68,30 @@ const Index = () => {
       </header>
 
       {/* Main content */}
-      <main className="container max-w-6xl mx-auto px-6 py-12">
+      <main className="container max-w-7xl mx-auto px-6 py-12">
         <RealTimeClock />
         
         <YearSelector year={year} onYearChange={setYear} />
         
-        <YearCalendar
-          year={year}
-          habitCompletions={data.habitCompletions}
-          habitList={data.habitList}
-        />
+        {/* Dashboard Grid: Left content + Right radar chart */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* Left side - Main content */}
+          <div className="lg:col-span-2">
+            <YearCalendar
+              year={year}
+              habitCompletions={data.habitCompletions}
+              habitList={data.habitList}
+            />
+          </div>
+          
+          {/* Right side - Radar Chart */}
+          <div className="lg:col-span-1">
+            <HabitRadarChart
+              habitCompletions={data.habitCompletions}
+              habitList={data.habitList}
+            />
+          </div>
+        </div>
 
         <div className="section-divider" />
 
