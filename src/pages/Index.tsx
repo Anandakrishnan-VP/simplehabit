@@ -7,14 +7,17 @@ import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
 import { RealTimeClock } from '@/components/RealTimeClock';
 import { HabitRadarChart } from '@/components/HabitRadarChart';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useHabitData } from '@/hooks/useHabitData';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from '@/hooks/useProfile';
 
 
 const Index = () => {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
-  const { user, loading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { profile, loading: profileLoading, isProfileComplete } = useProfile();
   const navigate = useNavigate();
   
   const {
@@ -33,12 +36,18 @@ const Index = () => {
   } = useHabitData();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
 
-  if (loading || dataLoading) {
+  useEffect(() => {
+    if (!authLoading && !profileLoading && user && !isProfileComplete) {
+      navigate('/profile-setup');
+    }
+  }, [user, authLoading, profileLoading, isProfileComplete, navigate]);
+
+  if (authLoading || profileLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <p className="font-mono text-sm uppercase tracking-wider">Loading...</p>
@@ -46,7 +55,7 @@ const Index = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !isProfileComplete) {
     return null;
   }
 
@@ -58,12 +67,24 @@ const Index = () => {
           <h1 className="font-mono text-lg font-bold uppercase tracking-widest">
             Habit Tracker
           </h1>
-          <button
-            onClick={signOut}
-            className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground border border-foreground px-3 py-1"
-          >
-            Sign Out
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <UserAvatar 
+                avatarUrl={profile?.avatar_url || null} 
+                username={profile?.username || null}
+                size="sm"
+              />
+              <span className="font-mono text-xs uppercase tracking-wider hidden sm:block">
+                {profile?.username}
+              </span>
+            </div>
+            <button
+              onClick={signOut}
+              className="font-mono text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground border border-foreground px-3 py-1"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
