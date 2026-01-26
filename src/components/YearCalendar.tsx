@@ -23,6 +23,7 @@ const getDateString = (year: number, month: number, day: number): string => {
 };
 
 // Calculate completion percentage for a specific date
+// Persistent model: ALL habits are tracked EVERY day
 const calculateDayCompletion = (
   year: number,
   month: number,
@@ -31,22 +32,19 @@ const calculateDayCompletion = (
   habitList: Habit[]
 ): number => {
   const habits = safeHabitList(habitList);
-  const dateStr = getDateString(year, month, day);
-  const dayIndex = getDayOfWeek(year, month, day);
-  const dayName = getDayName(dayIndex);
-  
-  // Get habits that are scheduled for this day of week
-  const habitsForDay = habits.filter(h => h.dayOfWeek === dayName);
-  if (habitsForDay.length === 0) return -1; // No habits scheduled
+  if (habits.length === 0) return -1; // No habits exist
 
+  const dateStr = getDateString(year, month, day);
+  
+  // Count completions for ALL habits on this date
   let completed = 0;
-  habitsForDay.forEach(habit => {
+  habits.forEach(habit => {
     if (habitCompletions[habit.id]?.[dateStr]) {
       completed++;
     }
   });
 
-  return completed / habitsForDay.length;
+  return completed / habits.length;
 };
 
 // Check if date is today or in the past
