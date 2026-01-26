@@ -40,19 +40,16 @@ export const DailyHabits = ({
   const todayDayName = getDayOfWeek(today);
   
   const [expandedDay, setExpandedDay] = useState<string | null>(todayDayName);
-  const [newHabitName, setNewHabitName] = useState<Record<string, string>>({});
+  const [newHabitName, setNewHabitName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const getHabitsForDay = (day: string) => {
-    return habitList.filter(h => h.dayOfWeek === day);
-  };
-
-  const handleAddHabit = (day: string) => {
-    const name = newHabitName[day]?.trim();
+  // Persistent model: Add habit globally (not day-specific)
+  const handleAddHabit = () => {
+    const name = newHabitName.trim();
     if (name) {
-      onAddHabit(name, day);
-      setNewHabitName(prev => ({ ...prev, [day]: '' }));
+      onAddHabit(name, ''); // Empty string = global habit
+      setNewHabitName('');
     }
   };
 
@@ -76,15 +73,46 @@ export const DailyHabits = ({
 
   return (
     <section className="mb-16">
-      <h2 className="section-title">Daily Habits</h2>
+      <h2 className="section-title">Daily Habit Tracker</h2>
       
+      {/* Add New Habit - Global section */}
+      <div className="mb-6 p-4 border border-foreground">
+        <p className="font-mono text-xs text-muted-foreground mb-3 uppercase tracking-wider">
+          Add a habit (tracked every day)
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            value={newHabitName}
+            onChange={(e) => setNewHabitName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddHabit();
+            }}
+            placeholder="Enter habit name..."
+            className="bg-background border border-foreground px-3 py-2 font-mono text-sm flex-1"
+          />
+          <button
+            onClick={handleAddHabit}
+            disabled={!newHabitName.trim()}
+            className="p-2 border border-foreground hover:bg-foreground hover:text-background disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Add habit"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Days of the week with all habits */}
       <div className="space-y-4">
         {DAYS.map(day => {
-          const dayHabits = getHabitsForDay(day);
           const isExpanded = expandedDay === day;
           const dateForDay = getDateForDay(day);
           const isToday = dateForDay === today;
-          const completedCount = dayHabits.filter(h => habitCompletions[h.id]?.[dateForDay]).length;
+          const isFuture = new Date(dateForDay) > new Date(today);
+          
+          // Count completions for ALL habits on this date
+          const completedCount = habitList.filter(h => habitCompletions[h.id]?.[dateForDay]).length;
+          const totalHabits = habitList.length;
           
           return (
             <div key={day} className={`border border-foreground ${isToday ? 'ring-2 ring-foreground' : ''}`}>
@@ -106,18 +134,39 @@ export const DailyHabits = ({
                     {dateForDay}
                   </span>
                 </div>
-                <span className="font-mono text-xs text-muted-foreground">
-                  {dayHabits.length > 0 ? `${completedCount}/${dayHabits.length}` : 'No habits'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {!isFuture && totalHabits > 0 && (
+                    <span 
+                      className="font-mono text-xs px-2 py-0.5"
+                      style={{ 
+                        backgroundColor: completedCount >= totalHabits * 0.5 
+                          ? 'hsl(var(--status-success))' 
+                          : 'hsl(var(--status-danger))',
+                        color: 'white'
+                      }}
+                    >
+                      {completedCount}/{totalHabits}
+                    </span>
+                  )}
+                  {isFuture && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      Future
+                    </span>
+                  )}
+                  {totalHabits === 0 && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      No habits
+                    </span>
+                  )}
+                </div>
               </button>
 
-              {/* Expanded Content */}
+              {/* Expanded Content - Show ALL habits */}
               {isExpanded && (
                 <div className="border-t border-foreground px-4 py-3">
-                  {/* Habit List */}
-                  {dayHabits.length > 0 ? (
-                    <ul className="space-y-2 mb-4">
-                      {dayHabits.map(habit => {
+                  {habitList.length > 0 ? (
+                    <ul className="space-y-2">
+                      {habitList.map(habit => {
                         const isChecked = habitCompletions[habit.id]?.[dateForDay] || false;
                         const isEditing = editingId === habit.id;
 
@@ -126,7 +175,7 @@ export const DailyHabits = ({
                             <button
                               onClick={() => onToggle(habit.id, dateForDay)}
                               className={`habit-checkbox flex-shrink-0 ${isChecked ? 'checked' : ''}`}
-                              aria-label={`${habit.name}${isChecked ? ' - completed' : ''}`}
+                              aria-label={`${habit.name}${isChecked ? ' - completed' : ' - missed'}`}
                             />
                             
                             {isEditing ? (
@@ -178,32 +227,10 @@ export const DailyHabits = ({
                       })}
                     </ul>
                   ) : (
-                    <p className="font-mono text-xs text-muted-foreground mb-4">
-                      No habits for {day} yet
+                    <p className="font-mono text-xs text-muted-foreground">
+                      No habits yet. Add one above to start tracking.
                     </p>
                   )}
-
-                  {/* Add New Habit */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      value={newHabitName[day] || ''}
-                      onChange={(e) => setNewHabitName(prev => ({ ...prev, [day]: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleAddHabit(day);
-                      }}
-                      placeholder="Add habit..."
-                      className="bg-background border border-foreground px-3 py-2 font-mono text-sm flex-1"
-                    />
-                    <button
-                      onClick={() => handleAddHabit(day)}
-                      disabled={!newHabitName[day]?.trim()}
-                      className="p-2 border border-foreground hover:bg-foreground hover:text-background disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label="Add habit"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
