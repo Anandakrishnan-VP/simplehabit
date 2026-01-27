@@ -6,10 +6,10 @@ import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 
 const AVATARS = [
-  { id: 1, url: '/avatars/avatar-1.png', label: 'Green' },
-  { id: 2, url: '/avatars/avatar-2.png', label: 'Magenta' },
-  { id: 3, url: '/avatars/avatar-3.png', label: 'Cyan' },
-  { id: 4, url: '/avatars/avatar-4.png', label: 'Yellow' },
+  { id: 1, url: '/avatars/avatar-1.png', label: 'Fire' },
+  { id: 2, url: '/avatars/avatar-2.png', label: 'Water' },
+  { id: 3, url: '/avatars/avatar-3.png', label: 'Air' },
+  { id: 4, url: '/avatars/avatar-4.png', label: 'Electric' },
 ];
 
 const ProfileSetup = () => {
