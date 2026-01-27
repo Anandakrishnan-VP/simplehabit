@@ -110,6 +110,7 @@ const Index = () => {
             <HabitRadarChart
               habitCompletions={data.habitCompletions}
               habitList={data.habitList}
+              year={year}
             />
           </div>
         </div>
