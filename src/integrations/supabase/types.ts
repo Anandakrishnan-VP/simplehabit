@@ -136,6 +136,54 @@ export type Database = {
         }
         Relationships: []
       }
+      revived_dates: {
+        Row: {
+          created_at: string
+          id: string
+          revived_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          revived_date: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          revived_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      streak_revivals: {
+        Row: {
+          created_at: string
+          id: string
+          revivals_available: number
+          revivals_earned_total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          revivals_available?: number
+          revivals_earned_total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          revivals_available?: number
+          revivals_earned_total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           completed: boolean
