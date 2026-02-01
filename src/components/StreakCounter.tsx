@@ -61,7 +61,7 @@ export const StreakCounter = ({ habitCompletions, habitList }: StreakCounterProp
   }, [habitCompletions, habitList]);
 
   return (
-    <div className="border border-foreground p-4 mb-4">
+    <div className="border border-foreground p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">

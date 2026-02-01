@@ -140,7 +140,7 @@ export const HabitRadarChart = ({ habitCompletions, habitList, year }: HabitRada
   };
 
   return (
-    <div className="border border-foreground p-4 h-full">
+    <div className="border border-foreground p-4 h-full overflow-hidden flex flex-col">
       {/* Header with view mode toggle */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="section-title">
@@ -198,7 +198,7 @@ export const HabitRadarChart = ({ habitCompletions, habitList, year }: HabitRada
       )}
 
       {/* Radar Chart */}
-      <div className="w-full h-[250px] lg:h-[280px]">
+      <div className="w-full flex-1 min-h-[200px] max-h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={chartData}>
             <PolarGrid stroke="hsl(0 0% 100% / 0.3)" />
