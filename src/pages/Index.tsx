@@ -7,6 +7,7 @@ import { TodoList } from '@/components/TodoList';
 import { YearSelector } from '@/components/YearSelector';
 import { RealTimeClock } from '@/components/RealTimeClock';
 import { HabitRadarChart } from '@/components/HabitRadarChart';
+import { StreakCounter } from '@/components/StreakCounter';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useHabitData } from '@/hooks/useHabitData';
 import { useAuth } from '@/hooks/useAuth';
@@ -105,8 +106,12 @@ const Index = () => {
             />
           </div>
           
-          {/* Right side - Radar Chart */}
+          {/* Right side - Streak Counter + Radar Chart */}
           <div className="lg:col-span-1">
+            <StreakCounter
+              habitCompletions={data.habitCompletions}
+              habitList={data.habitList}
+            />
             <HabitRadarChart
               habitCompletions={data.habitCompletions}
               habitList={data.habitList}
