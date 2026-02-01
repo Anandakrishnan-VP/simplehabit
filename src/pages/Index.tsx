@@ -8,6 +8,7 @@ import { YearSelector } from '@/components/YearSelector';
 import { RealTimeClock } from '@/components/RealTimeClock';
 import { HabitRadarChart } from '@/components/HabitRadarChart';
 import { StreakCounter } from '@/components/StreakCounter';
+import { DeadlineReminder } from '@/components/DeadlineReminder';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useHabitData } from '@/hooks/useHabitData';
 import { useAuth } from '@/hooks/useAuth';
@@ -104,19 +105,24 @@ const Index = () => {
               habitCompletions={data.habitCompletions}
               habitList={data.habitList}
             />
+            
+            {/* Deadline Reminders - below calendar */}
+            <DeadlineReminder todos={data.todos} />
           </div>
           
           {/* Right side - Streak Counter + Radar Chart */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex flex-col gap-4">
             <StreakCounter
               habitCompletions={data.habitCompletions}
               habitList={data.habitList}
             />
-            <HabitRadarChart
-              habitCompletions={data.habitCompletions}
-              habitList={data.habitList}
-              year={year}
-            />
+            <div className="flex-1 min-h-0">
+              <HabitRadarChart
+                habitCompletions={data.habitCompletions}
+                habitList={data.habitList}
+                year={year}
+              />
+            </div>
           </div>
         </div>
 
