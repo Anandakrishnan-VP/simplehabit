@@ -1,73 +1,127 @@
-# Welcome to your Lovable project
+<div align="center">
+  <img src="public/logo.svg" alt="Zystem" width="96" height="96" />
 
-## Project info
+  # Zystem
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+  **Your Level Up Partner.**
+  Track habits, crush goals, level up — a brutalist, offline-first productivity OS.
 
-## How can I edit this code?
+  [![Live](https://img.shields.io/badge/live-zystem.app-000?style=flat-square)](https://zystem.app)
+  [![Built with Lovable](https://img.shields.io/badge/built%20with-Lovable-000?style=flat-square)](https://lovable.dev)
+  [![PWA](https://img.shields.io/badge/PWA-installable-000?style=flat-square)](#)
+  [![License](https://img.shields.io/badge/license-MIT-000?style=flat-square)](LICENSE)
+</div>
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## Overview
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Zystem is a personal operating system for self-improvement. It blends habit tracking, body metrics, notes, link libraries, deadline reminders, and social challenges behind a single brutalist, monospace interface. Built local-first, it works fully offline and installs as a PWA or native Android app.
 
-Changes made via Lovable will be committed automatically to this repo.
+## ✨ Features
 
-**Use your preferred IDE**
+- 🔥 **Elemental avatars** — Fire / Water / Air / Electric themes drive neon accents.
+- ✅ **Habit tracking** — GitHub-style heatmap with 0–4 intensity, locked future dates.
+- 📊 **Habit Radar** — Monthly & yearly analytics mapped to elemental axes.
+- ⏱️ **Realtime clock & year countdown** — Customizable target date on the dashboard.
+- 📝 **Todo list** — Deadline dates with red overdue / orange tomorrow highlights.
+- 💧 **Water tracker** — 1L increment bottles with interactive UI.
+- 💪 **Body metrics** — US Navy Method BMI / Body Fat with a morphing SVG silhouette.
+- 🧠 **Muscle heatmap** — 15 muscle groups mapped to Purple/Gold/Green/Red.
+- 📒 **Notes** — Dual-pane editor with debounced auto-save.
+- 🔗 **Link libraries** — Categorized links with inline editing & multi-field search.
+- 👥 **Social challenges** — Mutual challenges with 6-digit IDs & consistency grids.
+- 🔥 **Streaks & revivals** — Streak tracking with revival power mechanics.
+- 🔔 **Notifications** — Browser push for 8 PM logins and 1-day deadline warnings.
+- 🕶️ **Guest mode** — Continue without an account; data lives on your device.
+- 📴 **Offline-first** — Full PWA + Capacitor Android wrapper, no network required.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend:** React 18 · TypeScript 5 · Vite 5 · Tailwind CSS · shadcn/ui
+- **Backend:** Lovable Cloud (Supabase — Auth, Postgres with RLS, Realtime)
+- **Auth:** Email/Password + Google OAuth
+- **Mobile:** Capacitor (Android)
+- **PWA:** `vite-plugin-pwa` with offline service worker
+- **State / Data:** TanStack Query + local-first storage layer
 
-Follow these steps:
+## 🎨 Design
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Pure white on black brutalism. Zero border radius. `IBM Plex Mono` everywhere. No frivolous animations — Zystem is a serious tool. Accent colors are driven by the user's elemental avatar.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🚀 Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+Requires Node.js 18+ and Bun (or npm).
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+# Clone
+git clone <your-repo-url>
+cd zystem
+
+# Install
+bun install   # or: npm install
+
+# Run dev
+bun run dev   # or: npm run dev
 ```
 
-**Edit a file directly in GitHub**
+App runs at `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment
 
-**Use GitHub Codespaces**
+Lovable Cloud auto-provisions `.env` with:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_PUBLISHABLE_KEY=...
+VITE_SUPABASE_PROJECT_ID=...
+```
 
-## What technologies are used for this project?
+### Android (Capacitor)
 
-This project is built with:
+```bash
+bun run build
+npx cap sync android
+npx cap open android
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📁 Project Structure
 
-## How can I deploy this project?
+```
+src/
+├── components/      # UI + feature components (brutalist shadcn)
+├── hooks/           # Data hooks (Supabase + local-first branching)
+├── pages/           # Routed views (Dashboard, Notes, Libraries, Friends…)
+├── lib/             # localStore, dateUtils, importGuestData
+├── integrations/    # Auto-generated Supabase client & types
+└── index.css        # Design tokens (HSL semantic)
+public/
+├── logo.svg         # Brand mark
+└── favicon.svg
+supabase/            # Cloud config
+```
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## 🧪 Scripts
 
-## Can I connect a custom domain to my Lovable project?
+| Command | Description |
+|---|---|
+| `bun run dev` | Start Vite dev server |
+| `bun run build` | Production build |
+| `bun run preview` | Preview production build |
+| `bunx vitest run` | Run tests |
 
-Yes, you can!
+## 🔐 Security
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- Row-Level Security on every table.
+- Roles stored in a dedicated `user_roles` table (never on profiles) with a `SECURITY DEFINER` `has_role()` function.
+- Guest data stays on-device unless the user opts into import after sign-in.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🌐 Links
+
+- **Live app:** https://zystem.app
+- **Preview:** https://zystem.lovable.app
+- **Lovable project:** https://lovable.dev/projects/9fb41315-7301-4bd0-8fae-17e5b130c2d0
+
+## 📜 License
+
+MIT © Zyphor
